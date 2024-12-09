@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,13 +31,13 @@ import org.apache.poi.ss.util.CellRangeAddress;
  * http://www.coderanch.com/t/420958/open-source/Copying-sheet-excel-file-another
  */
 public final class XlsUtil {
-	
+
 	private XlsUtil() {
 	}
 
 	/**
 	 * Copy a sheet to another sheet at a specific (row, column) position
-	 * 
+	 *
 	 * @param parentSheet the sheet to copy into
 	 * @param parentSheetRow the row inside parentSheet where we start to copy
 	 * @param parentSheetColumn the column inside parentSheet where we start to copy
@@ -50,7 +50,7 @@ public final class XlsUtil {
 
 	/**
 	 * Copy a sheet to another sheet at a specific (row, column) position
-	 * 
+	 *
 	 * @param parentSheet the sheet to copy into
 	 * @param parentSheetRow the row inside parentSheet where we start to copy
 	 * @param parentSheetColumn the column inside parentSheet where we start to copy
@@ -88,8 +88,8 @@ public final class XlsUtil {
 
 	/**
 	 * Copy a row from a sheet to another sheet
-	 * 
-	 * 
+	 *
+	 *
 	 * @param srcSheet the sheet to copy
 	 * @param destSheet the sheet to copy into
 	 * @param parentSheetRow the row inside destSheet where we start to copy
@@ -97,7 +97,7 @@ public final class XlsUtil {
 	 * @param srcRow the row to copy
 	 * @param destRow the row to create
 	 * @param styleMap style map
-	 *       
+	 *
 	 */
 	public static void copyRow(HSSFSheet srcSheet, HSSFSheet destSheet, int parentSheetRow, int parentSheetColumn, HSSFRow srcRow, HSSFRow destRow,
 			Map<Integer, HSSFCellStyle> styleMap) {
@@ -107,20 +107,20 @@ public final class XlsUtil {
 		destRow.setHeight(srcRow.getHeight());
 		// pour chaque row
 		for (int j = srcRow.getFirstCellNum(); j <= srcRow.getLastCellNum(); j++) {
-			HSSFCell oldCell = srcRow.getCell(j); // ancienne cell			
-			if (oldCell != null) {				
-				HSSFCell newCell = destRow.createCell(parentSheetColumn + j);				
+			HSSFCell oldCell = srcRow.getCell(j); // ancienne cell
+			if (oldCell != null) {
+				HSSFCell newCell = destRow.createCell(parentSheetColumn + j);
 				copyCell(oldCell, newCell, styleMap);
-				
+
 				CellRangeAddress mergedRegion = getMergedRegion(srcSheet, srcRow.getRowNum(), (short) oldCell.getColumnIndex());
 
 				if (mergedRegion != null) {
-					
+
 					CellRangeAddress newMergedRegion = new CellRangeAddress(parentSheetRow + mergedRegion.getFirstRow(),
-							parentSheetRow + mergedRegion.getLastRow(), 
-							parentSheetColumn + mergedRegion.getFirstColumn(), 
+							parentSheetRow + mergedRegion.getLastRow(),
+							parentSheetColumn + mergedRegion.getFirstColumn(),
 							parentSheetColumn + mergedRegion.getLastColumn());
-					
+
 					CellRangeAddressWrapper wrapper = new CellRangeAddressWrapper(newMergedRegion);
 					if (isNewMergedRegion(wrapper, mergedRegions)) {
 						mergedRegions.add(wrapper);
@@ -134,43 +134,43 @@ public final class XlsUtil {
 
 	/**
 	 * Copy a cell to another cell
-	 * 
+	 *
 	 * @param oldCell cell to be copied
 	 * @param newCell cell to be created
 	 * @param styleMap style map
 	 */
 	public static void copyCell(HSSFCell oldCell, HSSFCell newCell, Map<Integer, HSSFCellStyle> styleMap) {
-		if (styleMap != null) {			
+		if (styleMap != null) {
 			if (oldCell.getSheet().getWorkbook() == newCell.getSheet().getWorkbook()) {
 				newCell.setCellStyle(oldCell.getCellStyle());
-			} else {				
+			} else {
 				int stHashCode = oldCell.getCellStyle().hashCode();
-				HSSFCellStyle newCellStyle = styleMap.get(stHashCode);				
-				if (newCellStyle == null) {					
+				HSSFCellStyle newCellStyle = styleMap.get(stHashCode);
+				if (newCellStyle == null) {
 					newCellStyle = newCell.getSheet().getWorkbook().createCellStyle();
-					newCellStyle.cloneStyleFrom(oldCell.getCellStyle());					
+					newCellStyle.cloneStyleFrom(oldCell.getCellStyle());
 					styleMap.put(stHashCode, newCellStyle);
 				}
 				newCell.setCellStyle(newCellStyle);
-			}			
+			}
 		}
 		switch (oldCell.getCellType()) {
-		case HSSFCell.CELL_TYPE_STRING:
+		case STRING:
 			newCell.setCellValue(oldCell.getStringCellValue());
 			break;
-		case HSSFCell.CELL_TYPE_NUMERIC:
+		case NUMERIC:
 			newCell.setCellValue(oldCell.getNumericCellValue());
 			break;
-		case HSSFCell.CELL_TYPE_BLANK:
-			newCell.setCellType(HSSFCell.CELL_TYPE_BLANK);
+		case BLANK:
+			newCell.setCellValue("");
 			break;
-		case HSSFCell.CELL_TYPE_BOOLEAN:
+		case BOOLEAN:
 			newCell.setCellValue(oldCell.getBooleanCellValue());
 			break;
-		case HSSFCell.CELL_TYPE_ERROR:
+		case ERROR:
 			newCell.setCellErrorValue(oldCell.getErrorCellValue());
 			break;
-		case HSSFCell.CELL_TYPE_FORMULA:
+		case FORMULA:
 			newCell.setCellFormula(oldCell.getCellFormula());
 			break;
 		default:
@@ -178,7 +178,7 @@ public final class XlsUtil {
 		}
 
 	}
-	
+
 	public static CellRangeAddress getMergedRegion(HSSFSheet sheet, int rowNum, short cellNum) {
 		for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
 			CellRangeAddress merged = sheet.getMergedRegion(i);
@@ -191,7 +191,7 @@ public final class XlsUtil {
 
 	/**
 	 * Check that the merged region has been created in the destination sheet.
-	 * 
+	 *
 	 * @param newMergedRegion the merged region to copy or not in the destination sheet.
 	 * @param mergedRegions the list containing all the merged region.
 	 * @return true if the merged region is already in the list or not.

@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,6 +16,7 @@
  */
 package ro.nextreports.engine.exporter;
 
+import java.awt.Color;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,26 +40,16 @@ import java.awt.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.poi.hssf.model.InternalSheet;
-import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.usermodel.HSSFFont;
-import org.apache.poi.hssf.usermodel.HSSFSheet;
-import org.apache.poi.hssf.usermodel.HSSFRow;
-import org.apache.poi.hssf.usermodel.HSSFCell;
-import org.apache.poi.hssf.usermodel.HSSFRichTextString;
-import org.apache.poi.hssf.usermodel.HSSFDataFormat;
-import org.apache.poi.hssf.usermodel.HSSFPatriarch;
-import org.apache.poi.hssf.usermodel.HSSFClientAnchor;
-import org.apache.poi.hssf.usermodel.HSSFPicture;
-import org.apache.poi.hssf.usermodel.HSSFHyperlink;
-import org.apache.poi.hssf.util.HSSFRegionUtil;
+import org.apache.poi.hssf.usermodel.*;
+
+//import org.apache.poi.hssf.util.HSSFRegionUtil;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.RegionUtil;
+
 import org.apache.poi.poifs.filesystem.DirectoryEntry;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
 import org.apache.poi.hpsf.SummaryInformation;
 import org.apache.poi.hpsf.PropertySetFactory;
-import org.apache.poi.ss.usermodel.Footer;
-import org.apache.poi.ss.usermodel.Header;
-import org.apache.poi.ss.usermodel.PrintSetup;
 import org.apache.poi.ss.util.CellRangeAddress;
 
 import ro.nextreports.engine.ReleaseInfoAdapter;
@@ -92,72 +83,72 @@ import ro.nextreports.engine.util.StringUtil;
  * Time: 9:53:57 AM
  */
 public class XlsExporter extends ResultExporter {
-	
-	private static Log LOG = LogFactory.getLog(XlsExporter.class);
+
+    private static Log LOG = LogFactory.getLog(XlsExporter.class);
 
     //todo : character width?? (use 5)
     // method setColumnWidth(int column, int width) from poi
     // width is in units of 1/256 from character width (must be less or equal than 65536)
     // 72 is computer screen dpi
-    // system dpi is Toolkit.getDefaultToolkit().getScreenResolution()        
+    // system dpi is Toolkit.getDefaultToolkit().getScreenResolution()
     private static float POINTS_FOR_PIXEL = 72f * 256 / 5 / getDPI();
     private int prevSubreportFirstRow = -1;
     private int prevSubreportFirstColumn = 0;
-    private int prevSubreportLastColumn = -1;    
+    private int prevSubreportLastColumn = -1;
     private int addedPageRows = 0;
 
     public XlsExporter(ExporterBean bean) {
         super(bean);
     }
-    
-    // constructor used by a subreport exporter    
+
+    // constructor used by a subreport exporter
     private XlsExporter(ExporterBean bean, HSSFCellStyle cellStyle) {
-    	super(bean);
-    	subreportCellStyle = cellStyle;
-    }
-      
-    protected void initExport() throws QueryException {    	
-    	if (hasTemplate()) {    		
-    		try {
-				wb = new HSSFWorkbook(getTemplateInputStream());
-			} catch (IOException e) {
-				e.printStackTrace();
-				LOG.error(e.getMessage(), e);
-				wb = new HSSFWorkbook();   
-			}
-    	} else {
-    		wb = new HSSFWorkbook();
-    	}
+        super(bean);
+        subreportCellStyle = cellStyle;
     }
 
-    protected void finishExport() {    	
-    	String sheetName = bean.getReportLayout().getSheetNames();		
-		if (sheetNameContainsGroup(sheetName)) {
-			String actualName = replaceSheetNameParam(sheetName);
-	    	if (wb.getSheetName(page-3).equals(actualName)) {
-	    		// after group we may have other pages!
-	    		wb.setSheetName(page-2, String.valueOf(page-1));
-	    	} else {
-	    		wb.setSheetName(page-2, actualName);
-	    	}
-		}
-		if (!bean.isSubreport()) {
-			addRegions(xlsSheet, regions, wb);
-			try {
-				wb.write(getOut());
-				getOut().flush();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				try {
-					getOut().close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		//System.out.println("*** generated condStyles = " + condStyles.size());
-		//System.out.println("*** generated styles = " + styles.size());
+    protected void initExport() throws QueryException {
+        if (hasTemplate()) {
+            try {
+                wb = new HSSFWorkbook(getTemplateInputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+                LOG.error(e.getMessage(), e);
+                wb = new HSSFWorkbook();
+            }
+        } else {
+            wb = new HSSFWorkbook();
+        }
+    }
+
+    protected void finishExport() {
+        String sheetName = bean.getReportLayout().getSheetNames();
+        if (sheetNameContainsGroup(sheetName)) {
+            String actualName = replaceSheetNameParam(sheetName);
+            if (wb.getSheetName(page-3).equals(actualName)) {
+                // after group we may have other pages!
+                wb.setSheetName(page-2, String.valueOf(page-1));
+            } else {
+                wb.setSheetName(page-2, actualName);
+            }
+        }
+        if (!bean.isSubreport()) {
+            addRegions(xlsSheet, regions, wb);
+            try {
+                wb.write(getOut());
+                getOut().flush();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    getOut().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        //System.out.println("*** generated condStyles = " + condStyles.size());
+        //System.out.println("*** generated styles = " + styles.size());
     }
 
     // must be called after the file creation !!!
@@ -193,15 +184,15 @@ public class XlsExporter extends ResultExporter {
         }
     }
 
-	protected void close() {
-		if (!bean.isSubreport()) {
-			try {
-				getOut().close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+    protected void close() {
+        if (!bean.isSubreport()) {
+            try {
+                getOut().close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
 
     protected void flush() {
     }
@@ -216,37 +207,37 @@ public class XlsExporter extends ResultExporter {
 
     protected void exportCell(String bandName, BandElement bandElement, Object value, int gridRow, int row,
                               int column, int cols, int rowSpan, int colSpan, boolean isImage) {
-    	    	
-    	if (ReportLayout.PAGE_HEADER_BAND_NAME.equals(bandName)) {    	    		
-    		renderCellToHeaderFooter(headerS, bandName, bandElement, value, gridRow, row, column, cols, rowSpan, colSpan, isImage);    		
-    	} else if (ReportLayout.PAGE_FOOTER_BAND_NAME.equals(bandName)) { 
-    		renderCellToHeaderFooter(footerS, bandName, bandElement, value, gridRow, row, column, cols, rowSpan, colSpan, isImage);
-		} else {
 
-			int sheetRow = pageRow % fragmentsize;
-			if (column == 0) {
-				if (sheetRow == 0) {
-					if (page > 1) {
-						// wb.write(out);
-					}
+        if (ReportLayout.PAGE_HEADER_BAND_NAME.equals(bandName)) {
+            renderCellToHeaderFooter(headerS, bandName, bandElement, value, gridRow, row, column, cols, rowSpan, colSpan, isImage);
+        } else if (ReportLayout.PAGE_FOOTER_BAND_NAME.equals(bandName)) {
+            renderCellToHeaderFooter(footerS, bandName, bandElement, value, gridRow, row, column, cols, rowSpan, colSpan, isImage);
+        } else {
 
-					if ((page == 1) || (pageRow > 0)) {
-						newPage();
-						pageRow = 0;
-					}
-				}
-				xlsRow = xlsSheet.createRow(sheetRow);
-			}
-			if (bean.getReportLayout().isUseSize()) {
-				int width = (int) (bean.getReportLayout().getColumnsWidth().get(column) * POINTS_FOR_PIXEL);
-				// System.out.println("row="+row+ "  col="+column +
-				// "  width="+width);
-				xlsSheet.setColumnWidth(column, width);
-			}
-						
-			renderCell(bandElement, bandName, value, gridRow, sheetRow, column, rowSpan, colSpan, isImage);
-		}
-    }        
+            int sheetRow = pageRow % fragmentsize;
+            if (column == 0) {
+                if (sheetRow == 0) {
+                    if (page > 1) {
+                        // wb.write(out);
+                    }
+
+                    if ((page == 1) || (pageRow > 0)) {
+                        newPage();
+                        pageRow = 0;
+                    }
+                }
+                xlsRow = xlsSheet.createRow(sheetRow);
+            }
+            if (bean.getReportLayout().isUseSize()) {
+                int width = (int) (bean.getReportLayout().getColumnsWidth().get(column) * POINTS_FOR_PIXEL);
+                // System.out.println("row="+row+ "  col="+column +
+                // "  width="+width);
+                xlsSheet.setColumnWidth(column, width);
+            }
+
+            renderCell(bandElement, bandName, value, gridRow, sheetRow, column, rowSpan, colSpan, isImage);
+        }
+    }
 
     protected void afterRowExport() {
         addRegions(xlsSheet, regions, wb);
@@ -267,18 +258,18 @@ public class XlsExporter extends ResultExporter {
     private StringBuilder headerS = new StringBuilder();
     private StringBuilder footerS = new StringBuilder();
     private HSSFCellStyle subreportCellStyle;
-        
+
     // reuse fonts and styles
     // there is a maximum number of unique fonts in a workbook (512)
     // there is a maximum number of cell formats (4000)
     private Map<Integer, HSSFCellStyle> styles = new HashMap<Integer, HSSFCellStyle>();
     // styles used by formatting conditions
     private Map<Integer, HSSFCellStyle> condStyles = new HashMap<Integer, HSSFCellStyle>();
-    
+
     private Map<Integer, HSSFFont> fonts = new HashMap<Integer, HSSFFont>();
     // fonts used by formatting conditions
     private Map<Integer, HSSFFont> condFonts = new HashMap<Integer, HSSFFont>();
-    
+
     private Border border;
 
     private HSSFCellStyle buildBandElementStyle(BandElement bandElement, Object value, int gridRow, int gridColumn, int colSpan) {
@@ -287,157 +278,157 @@ public class XlsExporter extends ResultExporter {
         HSSFFont cellFont = null;
         int fontKey = -1;
         int styleKey = -1;
-        // we have to create new fonts and styles if some formatting conditions are met  
-        // also for subreports we may have a subreportCellStyle passed by ReportBandElement 
+        // we have to create new fonts and styles if some formatting conditions are met
+        // also for subreports we may have a subreportCellStyle passed by ReportBandElement
         boolean cacheFont = false;
         boolean cacheAllFont = false;
         boolean cacheStyle = false;
         boolean cacheAllStyle = false;
         if ((modifiedStyle[gridRow][gridColumn]) || bean.isSubreport()) {
-        	fontKey = getFontKey(style);
-        	if (fontKey != -1) {
-        		cellFont = condFonts.get(fontKey);        		
-        	}            
+            fontKey = getFontKey(style);
+            if (fontKey != -1) {
+                cellFont = condFonts.get(fontKey);
+            }
             if (cellFont == null) {
-            	cellFont = wb.createFont();
-            	cacheFont = true;
-            }	
-            
+                cellFont = wb.createFont();
+                cacheFont = true;
+            }
+
             styleKey = getStyleKey(style, bandElement);
             if (styleKey != -1) {
-            	cellStyle = condStyles.get(styleKey);
+                cellStyle = condStyles.get(styleKey);
             }
             if (cellStyle == null) {
-            	cellStyle = wb.createCellStyle();
-            	cacheStyle = true;
+                cellStyle = wb.createCellStyle();
+                cacheStyle = true;
             }
             modifiedStyle[gridRow][gridColumn] = false;
-        } else {            
+        } else {
             fontKey = getFontKey(style);
-        	if (fontKey != -1) {        		
-        		cellFont = fonts.get(fontKey);        		
-        	}
-        	if ((cellFont == null) && (bandElement != null)) {        		
-            	cellFont = wb.createFont();            	
-            	cacheAllFont = true;
-            }	
-        	
-        	styleKey = getStyleKey(style, bandElement);
+            if (fontKey != -1) {
+                cellFont = fonts.get(fontKey);
+            }
+            if ((cellFont == null) && (bandElement != null)) {
+                cellFont = wb.createFont();
+                cacheAllFont = true;
+            }
+
+            styleKey = getStyleKey(style, bandElement);
             if (styleKey != -1) {
-            	cellStyle = styles.get(styleKey);
+                cellStyle = styles.get(styleKey);
             }
             if (cellStyle == null) {
-            	cellStyle = wb.createCellStyle();
-            	cacheAllStyle = true;
-            }        	        	
+                cellStyle = wb.createCellStyle();
+                cacheAllStyle = true;
+            }
         }
 
-        // HSSFPalette cellPal = wb.getCustomPalette();        
-		if (style.containsKey(StyleFormatConstants.FONT_FAMILY_KEY)) {
-			String val = (String) style.get(StyleFormatConstants.FONT_FAMILY_KEY);
-			cellFont.setFontName(val);
-		}
-		if (style.containsKey(StyleFormatConstants.FONT_SIZE)) {
-			Float val = (Float) style.get(StyleFormatConstants.FONT_SIZE);
-			cellFont.setFontHeightInPoints(val.shortValue());
-		}
-		if (style.containsKey(StyleFormatConstants.FONT_COLOR)) {
-			Color val = (Color) style.get(StyleFormatConstants.FONT_COLOR);
-			cellFont.setColor(ExcelColorSupport.getNearestColor(val));
-		}
-		if (style.containsKey(StyleFormatConstants.FONT_STYLE_KEY)) {
-			if (StyleFormatConstants.FONT_STYLE_NORMAL.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
-				cellFont.setBoldweight(HSSFFont.BOLDWEIGHT_NORMAL);
-			}
-			if (StyleFormatConstants.FONT_STYLE_BOLD.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
-				cellFont.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
-			}
-			if (StyleFormatConstants.FONT_STYLE_ITALIC.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
-				cellFont.setItalic(true);
-			}
-			if (StyleFormatConstants.FONT_STYLE_BOLDITALIC.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
-				cellFont.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
-				cellFont.setItalic(true);
-			}
-		}
-        
+        // HSSFPalette cellPal = wb.getCustomPalette();
+        if (style.containsKey(StyleFormatConstants.FONT_FAMILY_KEY)) {
+            String val = (String) style.get(StyleFormatConstants.FONT_FAMILY_KEY);
+            cellFont.setFontName(val);
+        }
+        if (style.containsKey(StyleFormatConstants.FONT_SIZE)) {
+            Float val = (Float) style.get(StyleFormatConstants.FONT_SIZE);
+            cellFont.setFontHeightInPoints(val.shortValue());
+        }
+        if (style.containsKey(StyleFormatConstants.FONT_COLOR)) {
+            Color val = (Color) style.get(StyleFormatConstants.FONT_COLOR);
+            cellFont.setColor(ExcelColorSupport.getNearestColor(val));
+        }
+        if (style.containsKey(StyleFormatConstants.FONT_STYLE_KEY)) {
+            if (StyleFormatConstants.FONT_STYLE_NORMAL.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
+                cellFont.setBold(false);
+            }
+            if (StyleFormatConstants.FONT_STYLE_BOLD.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
+                cellFont.setBold(true);
+            }
+            if (StyleFormatConstants.FONT_STYLE_ITALIC.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
+                cellFont.setItalic(true);
+            }
+            if (StyleFormatConstants.FONT_STYLE_BOLDITALIC.equals(style.get(StyleFormatConstants.FONT_STYLE_KEY))) {
+                cellFont.setBold(true);
+                cellFont.setItalic(true);
+            }
+        }
+
         if (cacheFont && (fontKey != -1)) {
-        	condFonts.put(fontKey, cellFont);
+            condFonts.put(fontKey, cellFont);
         }
         if (cacheAllFont && (fontKey != -1)) {
-        	fonts.put(fontKey, cellFont);        	
+            fonts.put(fontKey, cellFont);
         }
         if (style.containsKey(StyleFormatConstants.BACKGROUND_COLOR)) {
             Color val = (Color) style.get(StyleFormatConstants.BACKGROUND_COLOR);
-            cellStyle.setFillPattern(HSSFCellStyle.SOLID_FOREGROUND);
+            cellStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             cellStyle.setFillForegroundColor(ExcelColorSupport.getNearestColor(val));
         }
         if (style.containsKey(StyleFormatConstants.HORIZONTAL_ALIGN_KEY)) {
             if (StyleFormatConstants.HORIZONTAL_ALIGN_LEFT.equals(
                     style.get(StyleFormatConstants.HORIZONTAL_ALIGN_KEY))) {
-                cellStyle.setAlignment((short) 1);
+                cellStyle.setAlignment(HorizontalAlignment.LEFT);
             }
             if (StyleFormatConstants.HORIZONTAL_ALIGN_RIGHT.equals(
                     style.get(StyleFormatConstants.HORIZONTAL_ALIGN_KEY))) {
-                cellStyle.setAlignment((short) 3);
+                cellStyle.setAlignment(HorizontalAlignment.RIGHT);
             }
             if (StyleFormatConstants.HORIZONTAL_ALIGN_CENTER.equals(
                     style.get(StyleFormatConstants.HORIZONTAL_ALIGN_KEY))) {
-                cellStyle.setAlignment((short) 2);
+                cellStyle.setAlignment(HorizontalAlignment.CENTER);
             }
         }
 
         if (style.containsKey(StyleFormatConstants.VERTICAL_ALIGN_KEY)) {
             if (StyleFormatConstants.VERTICAL_ALIGN_TOP.equals(
                     style.get(StyleFormatConstants.VERTICAL_ALIGN_KEY))) {
-                cellStyle.setVerticalAlignment(HSSFCellStyle.VERTICAL_TOP);
+                cellStyle.setVerticalAlignment(VerticalAlignment.TOP);
             }
             if (StyleFormatConstants.VERTICAL_ALIGN_MIDDLE.equals(
                     style.get(StyleFormatConstants.VERTICAL_ALIGN_KEY))) {
-                cellStyle.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+                cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             }
             if (StyleFormatConstants.VERTICAL_ALIGN_BOTTOM.equals(
                     style.get(StyleFormatConstants.VERTICAL_ALIGN_KEY))) {
-                cellStyle.setVerticalAlignment(HSSFCellStyle.VERTICAL_BOTTOM);
+                cellStyle.setVerticalAlignment(VerticalAlignment.BOTTOM);
             }
         } else {
-            cellStyle.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+            cellStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         }
 
-        short left = 0, right = 0, top = 0, bottom = 0; 
+        short left = 0, right = 0, top = 0, bottom = 0;
         Color leftColor = Color.BLACK, rightColor = Color.BLACK, topColor = Color.BLACK, bottomColor = Color.BLACK;
         if (style.containsKey(StyleFormatConstants.BORDER_LEFT)) {
             Float val = (Float) style.get(StyleFormatConstants.BORDER_LEFT);
             //
             left = val.shortValue();
             if (left == BORDER_THIN_VALUE) {
-                cellStyle.setBorderLeft(HSSFCellStyle.BORDER_THIN);
+                cellStyle.setBorderLeft(BorderStyle.THIN);
             }
             if (left == BORDER_MEDIUM_VALUE) {
-                cellStyle.setBorderLeft(HSSFCellStyle.BORDER_MEDIUM);
+                cellStyle.setBorderLeft(BorderStyle.MEDIUM);
             }
             if (left == BORDER_THICK_VALUE) {
-                cellStyle.setBorderLeft(HSSFCellStyle.BORDER_THICK);
+                cellStyle.setBorderLeft(BorderStyle.THICK);
             }
-            
+
             Color color = (Color) style.get(StyleFormatConstants.BORDER_LEFT_COLOR);
             leftColor = color;
             cellStyle.setLeftBorderColor(ExcelColorSupport.getNearestColor(color));
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_RIGHT)) {        	
+        if (style.containsKey(StyleFormatConstants.BORDER_RIGHT)) {
             Float val = (Float) style.get(StyleFormatConstants.BORDER_RIGHT);
             //
             right = val.shortValue();
             if (right == BORDER_THIN_VALUE) {
-                cellStyle.setBorderRight(HSSFCellStyle.BORDER_THIN);
+                cellStyle.setBorderRight(BorderStyle.THIN);
             }
             if (right == BORDER_MEDIUM_VALUE) {
-                cellStyle.setBorderRight(HSSFCellStyle.BORDER_MEDIUM);
+                cellStyle.setBorderRight(BorderStyle.MEDIUM);
             }
             if (right == BORDER_THICK_VALUE) {
-                cellStyle.setBorderRight(HSSFCellStyle.BORDER_THICK);
+                cellStyle.setBorderRight(BorderStyle.THICK);
             }
-            Color color = (Color) style.get(StyleFormatConstants.BORDER_RIGHT_COLOR);         
+            Color color = (Color) style.get(StyleFormatConstants.BORDER_RIGHT_COLOR);
             rightColor = color;
             cellStyle.setRightBorderColor(ExcelColorSupport.getNearestColor(color));
         }
@@ -446,13 +437,13 @@ public class XlsExporter extends ResultExporter {
             //
             top = val.shortValue();
             if (top == BORDER_THIN_VALUE) {
-                cellStyle.setBorderTop(HSSFCellStyle.BORDER_THIN);
+                cellStyle.setBorderTop(BorderStyle.THIN);
             }
             if (top == BORDER_MEDIUM_VALUE) {
-                cellStyle.setBorderTop(HSSFCellStyle.BORDER_MEDIUM);
+                cellStyle.setBorderTop(BorderStyle.MEDIUM);
             }
             if (top == BORDER_THICK_VALUE) {
-                cellStyle.setBorderTop(HSSFCellStyle.BORDER_THICK);
+                cellStyle.setBorderTop(BorderStyle.THICK);
             }
             Color color = (Color) style.get(StyleFormatConstants.BORDER_TOP_COLOR);
             topColor = color;
@@ -463,13 +454,13 @@ public class XlsExporter extends ResultExporter {
             //
             bottom = val.shortValue();
             if (bottom == BORDER_THIN_VALUE) {
-                cellStyle.setBorderBottom(HSSFCellStyle.BORDER_THIN);
+                cellStyle.setBorderBottom(BorderStyle.THIN);
             }
             if (bottom == BORDER_MEDIUM_VALUE) {
-                cellStyle.setBorderBottom(HSSFCellStyle.BORDER_MEDIUM);
+                cellStyle.setBorderBottom(BorderStyle.MEDIUM);
             }
             if (bottom == BORDER_THICK_VALUE) {
-                cellStyle.setBorderBottom(HSSFCellStyle.BORDER_THICK);
+                cellStyle.setBorderBottom(BorderStyle.THICK);
             }
             Color color = (Color) style.get(StyleFormatConstants.BORDER_BOTTOM_COLOR);
             bottomColor = color;
@@ -482,7 +473,7 @@ public class XlsExporter extends ResultExporter {
         border.setBottomColor(bottomColor);
 
         if (cellFont != null) {
-        	cellStyle.setFont(cellFont);
+            cellStyle.setFont(cellFont);
         }
 
         if (style.containsKey(StyleFormatConstants.PATTERN)) {
@@ -490,69 +481,69 @@ public class XlsExporter extends ResultExporter {
             HSSFDataFormat format = wb.createDataFormat();
             cellStyle.setDataFormat(format.getFormat(pattern));
         } else {
-        	cellStyle.setDataFormat((short)0);
+            cellStyle.setDataFormat((short)0);
         }
 
         if (bandElement != null) {
             cellStyle.setWrapText(bandElement.isWrapText());
         }
-        
+
         cellStyle = updateSubreportBandElementStyle(cellStyle, bandElement, value, gridRow, gridColumn, colSpan);
-        
+
         if (cacheStyle && (styleKey != -1)) {
-        	condStyles.put(styleKey, cellStyle);
+            condStyles.put(styleKey, cellStyle);
         }
         if (cacheAllStyle && (styleKey != -1)) {
-        	styles.put(styleKey, cellStyle);
+            styles.put(styleKey, cellStyle);
         }
 
         return cellStyle;
     }
-    
+
     // If a border style is set on a ReportBandElement we must apply it to all subreport cells
     private HSSFCellStyle updateSubreportBandElementStyle(HSSFCellStyle cellStyle, BandElement bandElement, Object value, int gridRow, int gridColumn, int colSpan) {
-    	if (subreportCellStyle == null) {
-    		return cellStyle;
-    	}
-    	    	    	    	
-    	if (gridColumn == 0) {    		
-    		cellStyle.setBorderLeft(subreportCellStyle.getBorderLeft());    	
-    		cellStyle.setLeftBorderColor(subreportCellStyle.getLeftBorderColor());    	
-    	} else if (gridColumn+colSpan-1 == bean.getReportLayout().getColumnCount()-1) {    		
-    		cellStyle.setBorderRight(subreportCellStyle.getBorderRight());
-    		cellStyle.setRightBorderColor(subreportCellStyle.getRightBorderColor());
-    	}     	    	
-    	
-    	if (pageRow == 0) {    		    		
-    		cellStyle.setBorderTop(subreportCellStyle.getBorderTop());  
-    		cellStyle.setTopBorderColor(subreportCellStyle.getTopBorderColor());  
-    	} else if ( (pageRow+1) == getRowsCount()) {    	    		
-    		cellStyle.setBorderBottom(subreportCellStyle.getBorderBottom());    	
-    		cellStyle.setBottomBorderColor(subreportCellStyle.getBottomBorderColor());
-    	}    	
-    	    
-    	return cellStyle;
+        if (subreportCellStyle == null) {
+            return cellStyle;
+        }
+
+        if (gridColumn == 0) {
+            cellStyle.setBorderLeft(subreportCellStyle.getBorderLeft());
+            cellStyle.setLeftBorderColor(subreportCellStyle.getLeftBorderColor());
+        } else if (gridColumn+colSpan-1 == bean.getReportLayout().getColumnCount()-1) {
+            cellStyle.setBorderRight(subreportCellStyle.getBorderRight());
+            cellStyle.setRightBorderColor(subreportCellStyle.getRightBorderColor());
+        }
+
+        if (pageRow == 0) {
+            cellStyle.setBorderTop(subreportCellStyle.getBorderTop());
+            cellStyle.setTopBorderColor(subreportCellStyle.getTopBorderColor());
+        } else if ( (pageRow+1) == getRowsCount()) {
+            cellStyle.setBorderBottom(subreportCellStyle.getBorderBottom());
+            cellStyle.setBottomBorderColor(subreportCellStyle.getBottomBorderColor());
+        }
+
+        return cellStyle;
     }
 
 
     private void renderCell(BandElement bandElement, String bandName, Object value,
                             int gridRow, int sheetRow, int sheetColumn, int rowSpan,
-                            int colSpan, boolean image) {    	
-    	    	
-    	if (bandElement instanceof ReportBandElement)  {
-    		colSpan = 1;
-    	}    	
+                            int colSpan, boolean image) {
+
+        if (bandElement instanceof ReportBandElement)  {
+            colSpan = 1;
+        }
         HSSFCellStyle cellStyle = buildBandElementStyle(bandElement, value, gridRow, sheetColumn, colSpan);
-        
+
         // if we have a subreport on the current grid row we have to take care of the sheetColumn
-        if (ReportLayout.HEADER_BAND_NAME.equals(bandName) && (gridRow == prevSubreportFirstRow) && (prevSubreportLastColumn != -1)) {        	
-    		sheetColumn = prevSubreportLastColumn - prevSubreportFirstColumn - 1 + sheetColumn;    		
-    	}
+        if (ReportLayout.HEADER_BAND_NAME.equals(bandName) && (gridRow == prevSubreportFirstRow) && (prevSubreportLastColumn != -1)) {
+            sheetColumn = prevSubreportLastColumn - prevSubreportFirstColumn - 1 + sheetColumn;
+        }
         HSSFCell c = xlsRow.createCell(sheetColumn);
 
-        if (image) {        	        	
+        if (image) {
             if ((value == null) || "".equals(value)) {
-                c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                //c.setCellType(HSSFCell.CELL_TYPE_STRING);
                 c.setCellValue(new HSSFRichTextString(IMAGE_NOT_FOUND));
             } else {
                 try {
@@ -575,9 +566,9 @@ public class XlsExporter extends ResultExporter {
 
                     HSSFPicture picture = patriarch.createPicture(anchor, index);
                     picture.resize();
-                    anchor.setAnchorType(2);
+                    anchor.setAnchorType(ClientAnchor.AnchorType.byId(2));
                 } catch (Exception ex) {
-                    c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                    //c.setCellType(HSSFCell.CELL_TYPE_STRING);
                     c.setCellValue(new HSSFRichTextString(IMAGE_NOT_LOADED));
                 }
             }
@@ -589,219 +580,219 @@ public class XlsExporter extends ResultExporter {
         } else {
             if (bandElement instanceof HyperlinkBandElement) {
                 Hyperlink hyp = ((HyperlinkBandElement) bandElement).getHyperlink();
-                HSSFHyperlink link = new HSSFHyperlink(HSSFHyperlink.LINK_URL);
-                link.setAddress(hyp.getUrl());
-                c.setHyperlink(link);
+                //HSSFHyperlink link = new HSSFHyperlink(HSSFHyperlink.LINK_URL);
+                //link.setAddress(hyp.getUrl());
+                //c.setHyperlink(link);
                 c.setCellValue(new HSSFRichTextString(hyp.getText()));
-                c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                //c.setCellType(HSSFCell.CELL_TYPE_STRING);
             } else if (bandElement instanceof ReportBandElement)  {
-                Report report = ((ReportBandElement)bandElement).getReport(); 
+                Report report = ((ReportBandElement)bandElement).getReport();
                 ExporterBean eb = null;
-                try {            	
-                	eb = getSubreportExporterBean(report, true);                	
+                try {
+                    eb = getSubreportExporterBean(report, true);
                     XlsExporter subExporter = new XlsExporter(eb, cellStyle);
-                    subExporter.export();    
-                    HSSFSheet subreportSheet = subExporter.getSubreportSheet();                    
-                    
+                    subExporter.export();
+                    HSSFSheet subreportSheet = subExporter.getSubreportSheet();
+
                     if (ReportLayout.HEADER_BAND_NAME.equals(bandName) && (gridRow == prevSubreportFirstRow)) {
-                    	// other subreports on the same header line after the first
-                    	sheetColumn = prevSubreportLastColumn;
-                    	sheetRow -= addedPageRows;
-                    	pageRow -= addedPageRows;
-                    	addedPageRows = 0;
+                        // other subreports on the same header line after the first
+                        sheetColumn = prevSubreportLastColumn;
+                        sheetRow -= addedPageRows;
+                        pageRow -= addedPageRows;
+                        addedPageRows = 0;
                     } else {
-                    	addedPageRows = subreportSheet.getLastRowNum();
-                    	pageRow += addedPageRows;
-                    	// if subreport is not on the first column we merge all cells in the columns before, between the rows subreport occupies
-                        if (sheetColumn > 0) {             
-                        	for (int i=0; i <= sheetColumn-1; i++) {                        		
-                        		CellRangeAddress cra = new CellRangeAddress(sheetRow, pageRow, i, i);		    						
-                        		regions.add(new XlsRegion(cra, null));
-                        	}
-                        }  
+                        addedPageRows = subreportSheet.getLastRowNum();
+                        pageRow += addedPageRows;
+                        // if subreport is not on the first column we merge all cells in the columns before, between the rows subreport occupies
+                        if (sheetColumn > 0) {
+                            for (int i=0; i <= sheetColumn-1; i++) {
+                                CellRangeAddress cra = new CellRangeAddress(sheetRow, pageRow, i, i);
+                                regions.add(new XlsRegion(cra, null));
+                            }
+                        }
                     }
-                    int cols = XlsUtil.copyToSheet(xlsSheet, sheetRow, sheetColumn, subreportSheet);   
+                    int cols = XlsUtil.copyToSheet(xlsSheet, sheetRow, sheetColumn, subreportSheet);
                     addRegions(xlsSheet, subExporter.getSubreportRegions(), wb);
                     if (ReportLayout.HEADER_BAND_NAME.equals(bandName)) {
-                    	prevSubreportFirstRow = gridRow;
-                    	prevSubreportFirstColumn = sheetColumn;
-                    	prevSubreportLastColumn = sheetColumn + cols;                    	                    	
+                        prevSubreportFirstRow = gridRow;
+                        prevSubreportFirstColumn = sheetColumn;
+                        prevSubreportLastColumn = sheetColumn + cols;
                     }
-    			} catch (Exception e) {				
-    				e.printStackTrace();
-    			} finally {
-    				if ((eb != null) && (eb.getResult() != null)) {
-    					eb.getResult().close();
-    				}
-    			}    
-        	} else if (bandElement instanceof ImageColumnBandElement){
-            	try {        		
-            		ImageColumnBandElement icbe = (ImageColumnBandElement)bandElement;
-            		String v = StringUtil.getValueAsString(value, null);
-            		if(StringUtil.BLOB.equals(v)) {
-            			c.setCellType(HSSFCell.CELL_TYPE_STRING);
-                        c.setCellValue(new HSSFRichTextString(StringUtil.BLOB));            			
-            		} else {
-    	        		byte[] imageD = StringUtil.decodeImage(v);
-    	        		byte[] imageBytes = getImage(imageD, icbe.getWidth(), icbe.getHeight());
-    	        		HSSFClientAnchor anchor = new HSSFClientAnchor(0, 0, 0, 0, (short) sheetColumn, sheetRow,
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    if ((eb != null) && (eb.getResult() != null)) {
+                        eb.getResult().close();
+                    }
+                }
+            } else if (bandElement instanceof ImageColumnBandElement){
+                try {
+                    ImageColumnBandElement icbe = (ImageColumnBandElement)bandElement;
+                    String v = StringUtil.getValueAsString(value, null);
+                    if(StringUtil.BLOB.equals(v)) {
+                        //c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                        c.setCellValue(new HSSFRichTextString(StringUtil.BLOB));
+                    } else {
+                        byte[] imageD = StringUtil.decodeImage(v);
+                        byte[] imageBytes = getImage(imageD, icbe.getWidth(), icbe.getHeight());
+                        HSSFClientAnchor anchor = new HSSFClientAnchor(0, 0, 0, 0, (short) sheetColumn, sheetRow,
                                 (short) (sheetColumn + colSpan), (sheetRow + rowSpan));
                         int index = wb.addPicture(imageBytes, HSSFWorkbook.PICTURE_TYPE_JPEG);
 
                         // image is created over the cells, so if it's height is bigger we set the row height
                         short height = xlsRow.getHeight();
-                        int realImageHeight = getRealImageSize(imageBytes)[1];   
+                        int realImageHeight = getRealImageSize(imageBytes)[1];
                         if (icbe.isScaled()) {
                             realImageHeight = icbe.getHeight();
                         }
-                        short imageHeight = (short)(realImageHeight * POINTS_FOR_PIXEL/2.5);                        
+                        short imageHeight = (short)(realImageHeight * POINTS_FOR_PIXEL/2.5);
                         if (imageHeight > height)  {
                             xlsRow.setHeight(imageHeight);
                         }
 
                         HSSFPicture picture = patriarch.createPicture(anchor, index);
                         picture.resize();
-                        anchor.setAnchorType(2);
-            		}        		
-    			} catch (Exception e) {		
-    				e.printStackTrace();
-    				c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                        anchor.setAnchorType(ClientAnchor.AnchorType.byId(2));
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    //c.setCellType(HSSFCell.CELL_TYPE_STRING);
                     c.setCellValue(new HSSFRichTextString(IMAGE_NOT_LOADED));
-    			}
-            	
-                
+                }
+
+
             } else {
-            	            	            	
+
                 if (value == null) {
-                    c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                    //c.setCellType(HSSFCell.CELL_TYPE_STRING);
                     c.setCellValue(new HSSFRichTextString(""));
                 } else if (value instanceof Number) {
-                    c.setCellType(HSSFCell.CELL_TYPE_NUMERIC);
+                    //c.setCellType(HSSFCell.CELL_TYPE_NUMERIC);
                     c.setCellValue(((Number) value).doubleValue());
-                } else {                	                	                    
+                } else {
                     String pattern = null;
                     if (bandElement instanceof FieldBandElement) {
                         FieldBandElement fbe = (FieldBandElement) bandElement;
                         pattern = fbe.getPattern();
                     }
-                    if ((value instanceof java.sql.Date) || (value instanceof java.sql.Timestamp)) { 
-                    	Date date;
-                    	if (value instanceof java.sql.Date) {                    		
-                    		date = new Date(((java.sql.Date)value).getTime());
-                    	} else {
-                    		date = (java.sql.Timestamp)value;
-                    	}                    	                    	                      	                    	
-                    	if (cellStyle != null) {
-                    		if (pattern == null) {
-                    			// use default pattern if none selected
-                    			Locale locale = Locale.getDefault();
-                    			pattern = ((SimpleDateFormat)DateFormat.getDateInstance(SimpleDateFormat.MEDIUM,locale)).toPattern();                    			
-                    		} else {
-                    			pattern = StringUtil.getI18nString(pattern, getReportLanguage());
-                    		}
-                    		cellStyle.setDataFormat(wb.createDataFormat().getFormat(pattern));
-                    	}
-                    	c.setCellValue(date);
-                    } else {                    	
-                    	c.setCellType(HSSFCell.CELL_TYPE_STRING);                    	
-                    	String text = StringUtil.getValueAsString(value, pattern);                    	
-						if ((bandElement != null) && bandElement.isWrapText()) {							
-							// try to interpret new line characters
-							// \\n is used here to be possible to add in designer grid cell with \n
-							if (text.contains("\\n") || text.contains("\n") || text.contains("\r") || text.contains("\r\n")) {
-								String crLf = Character.toString((char) 13) + Character.toString((char) 10);
-								int lines = countLines(text);
-								if (text.contains("\r\n")) {
-									text = text.replaceAll("\r\n", crLf);
-								} else {
-									text = text.replaceAll("(\n)|(\r)|(\\\\n)", crLf);
-								}
-								c.setCellValue(text);
-								cellStyle.setWrapText(true);
-								xlsRow.setHeightInPoints(lines * (cellStyle.getFont(wb).getFontHeightInPoints() + 3));
-							} else {
-								c.setCellValue(new HSSFRichTextString(text));
-							}
-						} else {
-							c.setCellValue(new HSSFRichTextString(text));
-						}        	
-                    	
-                    }                    
+                    if ((value instanceof java.sql.Date) || (value instanceof java.sql.Timestamp)) {
+                        Date date;
+                        if (value instanceof java.sql.Date) {
+                            date = new Date(((java.sql.Date)value).getTime());
+                        } else {
+                            date = (java.sql.Timestamp)value;
+                        }
+                        if (cellStyle != null) {
+                            if (pattern == null) {
+                                // use default pattern if none selected
+                                Locale locale = Locale.getDefault();
+                                pattern = ((SimpleDateFormat)DateFormat.getDateInstance(SimpleDateFormat.MEDIUM,locale)).toPattern();
+                            } else {
+                                pattern = StringUtil.getI18nString(pattern, getReportLanguage());
+                            }
+                            cellStyle.setDataFormat(wb.createDataFormat().getFormat(pattern));
+                        }
+                        c.setCellValue(date);
+                    } else {
+                        //c.setCellType(HSSFCell.CELL_TYPE_STRING);
+                        String text = StringUtil.getValueAsString(value, pattern);
+                        if ((bandElement != null) && bandElement.isWrapText()) {
+                            // try to interpret new line characters
+                            // \\n is used here to be possible to add in designer grid cell with \n
+                            if (text.contains("\\n") || text.contains("\n") || text.contains("\r") || text.contains("\r\n")) {
+                                String crLf = Character.toString((char) 13) + Character.toString((char) 10);
+                                int lines = countLines(text);
+                                if (text.contains("\r\n")) {
+                                    text = text.replaceAll("\r\n", crLf);
+                                } else {
+                                    text = text.replaceAll("(\n)|(\r)|(\\\\n)", crLf);
+                                }
+                                c.setCellValue(text);
+                                cellStyle.setWrapText(true);
+                                xlsRow.setHeightInPoints(lines * (cellStyle.getFont(wb).getFontHeightInPoints() + 3));
+                            } else {
+                                c.setCellValue(new HSSFRichTextString(text));
+                            }
+                        } else {
+                            c.setCellValue(new HSSFRichTextString(text));
+                        }
+
+                    }
                 }
             }
 
             if (cellStyle != null) {
-            	if (bandElement != null) {            		
-            		cellStyle.setRotation(bandElement.getTextRotation());
-            	}            	
-            	if (!(bandElement instanceof ReportBandElement)) {
-            		c.setCellStyle(cellStyle);
-            	}
+                if (bandElement != null) {
+                    cellStyle.setRotation(bandElement.getTextRotation());
+                }
+                if (!(bandElement instanceof ReportBandElement)) {
+                    c.setCellStyle(cellStyle);
+                }
             }
-			
-			if ((rowSpan > 1) || (colSpan > 1)) {
-				CellRangeAddress cra = new CellRangeAddress(sheetRow, sheetRow + rowSpan - 1, sheetColumn, sheetColumn + colSpan - 1);
-				Border beBorder = bandElement.getBorder();
-				if (hasRowRenderConditions(bandElement, gridRow, value)) {
-					// for row render conditions we must keep the row border
-					beBorder = border;
-				}
-				regions.add(new XlsRegion(cra, beBorder));
-			}
-			            
+
+            if ((rowSpan > 1) || (colSpan > 1)) {
+                CellRangeAddress cra = new CellRangeAddress(sheetRow, sheetRow + rowSpan - 1, sheetColumn, sheetColumn + colSpan - 1);
+                Border beBorder = bandElement.getBorder();
+                if (hasRowRenderConditions(bandElement, gridRow, value)) {
+                    // for row render conditions we must keep the row border
+                    beBorder = border;
+                }
+                regions.add(new XlsRegion(cra, beBorder));
+            }
+
         }
     }
-    
+
     private int countLines(String text) {
-    	Matcher m = Pattern.compile("(\n)|(\r)|(\r\n)|(\\\\n)").matcher(text);
-    	int lines = 1;
-    	while (m.find()) {
-    		lines ++;
-    	}
-    	return lines;
+        Matcher m = Pattern.compile("(\n)|(\r)|(\r\n)|(\\\\n)").matcher(text);
+        int lines = 1;
+        while (m.find()) {
+            lines ++;
+        }
+        return lines;
     }
-    
+
     // http://poi.apache.org/apidocs/org/apache/poi/xssf/usermodel/extensions/XSSFHeaderFooter.html
     private void renderCellToHeaderFooter(StringBuilder result, String bandName, BandElement bandElement, Object value, int gridRow, int row,
-                              int column, int cols, int rowSpan, int colSpan, boolean isImage) {
-    	    	
-    	if (newRow) {
-    		result.append("\r\n ");
-    	} else {
-    		result.append(" ");
-    	}
-    	boolean specialCell = false;
-    	if (bandElement instanceof VariableBandElement)  {
-        	VariableBandElement vbe = (VariableBandElement)bandElement;
-        	Variable var = VariableFactory.getVariable(vbe.getVariable());        	
-        	if (var instanceof PageNoVariable) {           		
-        		specialCell = true;
-        		result.append("&P");
-        	} 
-    	} else if (bandElement instanceof ExpressionBandElement)  {
-         	// special case pageNo inside an expression
-         	// bandName is not important here (it is used for groupRow computation)
-    		PrefixSuffix pf = interpretPageNo(bandElement);
-			if (pf != null) {
-				result.append(pf.getPrefix()).append(" &P ").append(pf.getSuffix());     
-				specialCell = true;
-			}	
-    	}
-		if (!specialCell) {
-			result.append(value);
-		}				
+                                          int column, int cols, int rowSpan, int colSpan, boolean isImage) {
+
+        if (newRow) {
+            result.append("\r\n ");
+        } else {
+            result.append(" ");
+        }
+        boolean specialCell = false;
+        if (bandElement instanceof VariableBandElement)  {
+            VariableBandElement vbe = (VariableBandElement)bandElement;
+            Variable var = VariableFactory.getVariable(vbe.getVariable());
+            if (var instanceof PageNoVariable) {
+                specialCell = true;
+                result.append("&P");
+            }
+        } else if (bandElement instanceof ExpressionBandElement)  {
+            // special case pageNo inside an expression
+            // bandName is not important here (it is used for groupRow computation)
+            PrefixSuffix pf = interpretPageNo(bandElement);
+            if (pf != null) {
+                result.append(pf.getPrefix()).append(" &P ").append(pf.getSuffix());
+                specialCell = true;
+            }
+        }
+        if (!specialCell) {
+            result.append(value);
+        }
     }
 
 
     private short getXlsBorderValue(int border) {
         if (border == BORDER_THIN_VALUE) {
-            return HSSFCellStyle.BORDER_THIN;
+            return BorderStyle.THIN.getCode();
         }
         if (border == BORDER_MEDIUM_VALUE) {
-            return HSSFCellStyle.BORDER_MEDIUM;
+            return BorderStyle.MEDIUM.getCode();
         }
         if (border == BORDER_THICK_VALUE) {
-            return HSSFCellStyle.BORDER_THICK;
+            return BorderStyle.THICK.getCode();
         }
         return 0;
     }
@@ -816,27 +807,35 @@ public class XlsExporter extends ResultExporter {
             if (border != null) {
                 short xlsBottomBorder = getXlsBorderValue(border.getBottom());
                 if (xlsBottomBorder > 0) {
-                    HSSFRegionUtil.setBorderBottom(xlsBottomBorder, region, xlsSheet, wb);
-                    HSSFRegionUtil.setBottomBorderColor(ExcelColorSupport.getNearestColor(border.getBottomColor()), 
-                    		region, xlsSheet, wb);
+                    //HSSFRegionUtil.setBorderBottom(xlsBottomBorder, region, xlsSheet, wb);
+                    RegionUtil.setBorderBottom(BorderStyle.valueOf(xlsBottomBorder), region, xlsSheet);
+                    //HSSFRegionUtil.setBottomBorderColor(ExcelColorSupport.getNearestColor(border.getBottomColor()),
+                    RegionUtil.setBottomBorderColor(ExcelColorSupport.getNearestColor(border.getBottomColor()),
+                            region, xlsSheet);
                 }
                 short xlsTopBorder = getXlsBorderValue(border.getTop());
                 if (xlsTopBorder > 0) {
-                    HSSFRegionUtil.setBorderTop(xlsTopBorder,region, xlsSheet, wb);
-                    HSSFRegionUtil.setTopBorderColor(ExcelColorSupport.getNearestColor(border.getTopColor()), 
-                    		region, xlsSheet, wb);
+                    //HSSFRegionUtil.setBorderTop(xlsTopBorder,region, xlsSheet, wb);
+                    RegionUtil.setBorderTop(BorderStyle.valueOf(xlsTopBorder),region, xlsSheet);
+                    //HSSFRegionUtil.setTopBorderColor(ExcelColorSupport.getNearestColor(border.getTopColor()),
+                    RegionUtil.setTopBorderColor(ExcelColorSupport.getNearestColor(border.getTopColor()),
+                            region, xlsSheet);
                 }
                 short xlsLeftBorder = getXlsBorderValue(border.getLeft());
                 if (xlsLeftBorder > 0) {
-                    HSSFRegionUtil.setBorderLeft(xlsLeftBorder, region, xlsSheet, wb);
-                    HSSFRegionUtil.setLeftBorderColor(ExcelColorSupport.getNearestColor(border.getLeftColor()), 
-                    		region, xlsSheet, wb);
+                    //HSSFRegionUtil.setBorderLeft(xlsLeftBorder, region, xlsSheet, wb);
+                    RegionUtil.setBorderLeft(BorderStyle.valueOf(xlsLeftBorder), region, xlsSheet);
+                    //HSSFRegionUtil.setLeftBorderColor(ExcelColorSupport.getNearestColor(border.getLeftColor()),
+                    RegionUtil.setLeftBorderColor(ExcelColorSupport.getNearestColor(border.getLeftColor()),
+                            region, xlsSheet);
                 }
                 short xlsRightBorder = getXlsBorderValue(border.getRight());
                 if (xlsRightBorder > 0) {
-                    HSSFRegionUtil.setBorderRight(xlsRightBorder, region, xlsSheet, wb);
-                    HSSFRegionUtil.setRightBorderColor(ExcelColorSupport.getNearestColor(border.getRightColor()), 
-                    		region, xlsSheet, wb);
+                    //HSSFRegionUtil.setBorderRight(xlsRightBorder, region, xlsSheet, wb);
+                    RegionUtil.setBorderRight(BorderStyle.valueOf(xlsRightBorder), region, xlsSheet);
+                    //HSSFRegionUtil.setRightBorderColor(ExcelColorSupport.getNearestColor(border.getRightColor()),
+                    RegionUtil.setRightBorderColor(ExcelColorSupport.getNearestColor(border.getRightColor()),
+                            region, xlsSheet);
                 }
             }
 
@@ -862,115 +861,115 @@ public class XlsExporter extends ResultExporter {
         }
     }
 
-	protected void newPage() {
-		addRegions(xlsSheet, regions, wb);
-		if (hasTemplate()) {
-			xlsSheet = wb.getSheetAt(bean.getReportLayout().getTemplateSheet()-1);  
-		} else {
-			// for a group name inside sheet name when we create a page we do not have the group name yet
-			// so we will have to set the name of the previous sheet (see also finishExport where we set the name of the last sheet(s)
-			String sheetName = replaceSheetNameParam(bean.getReportLayout().getSheetNames());
-			if ((sheetName == null) || sheetName.isEmpty()) {
-				sheetName = String.valueOf(page);
-			}
-			if (sheetNameContainsGroup(bean.getReportLayout().getSheetNames()) && (page>1)) {
-				// current group is for previous sheet page			
-				xlsSheet = wb.createSheet(String.valueOf(page));				
-				wb.setSheetName(page-2, sheetName);				
-			} else {
-				xlsSheet = wb.createSheet(sheetName);
-			}
-		}
-		xlsSheet.setMargin(InternalSheet.LeftMargin, getInches(bean.getReportLayout().getPagePadding().getLeft()));
-		xlsSheet.setMargin(InternalSheet.RightMargin, getInches(bean.getReportLayout().getPagePadding().getRight()));
-		xlsSheet.setMargin(InternalSheet.TopMargin, getInches(bean.getReportLayout().getPagePadding().getTop()));
-		xlsSheet.setMargin(InternalSheet.BottomMargin, getInches(bean.getReportLayout().getPagePadding().getBottom()));		
-		
-		if (bean.getReportLayout().getOrientation() == LANDSCAPE) {
-			xlsSheet.getPrintSetup().setLandscape(true);			
-		}
-		
-		setPaperSize();
-		
-		patriarch = xlsSheet.createDrawingPatriarch();
-		buildHeader();
-		buildFooter();
-		page++;
-		// first page header is written by ResultExporter
-		if (bean.getReportLayout().isHeaderOnEveryPage() && (page > 2)) {
-			try {
-				printHeaderBand();
-			} catch (QueryException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	private void setPaperSize() {
-		String pageFormat = bean.getReportLayout().getPageFormat();		
-		short size = 0;		
-		if (ReportLayout.LETTER.equals(pageFormat)) {			
-			size = PrintSetup.LETTER_PAPERSIZE;
-		} else if (ReportLayout.A3.equals(pageFormat)) {			
-			size = PrintSetup.A3_PAPERSIZE;
-		} else if (ReportLayout.A4.equals(pageFormat)) {			
-			size = PrintSetup.A4_PAPERSIZE;
-		} else if (ReportLayout.LEGAL.equals(pageFormat)) {			
-			size = PrintSetup.LEGAL_PAPERSIZE;
-		} else if (ReportLayout.LEDGER.equals(pageFormat)) {			
-			size = PrintSetup.LEDGER_PAPERSIZE;
-		} else if (ReportLayout.TABLOID.equals(pageFormat)) {			
-			size = PrintSetup.TABLOID_PAPERSIZE;
-		}
-		if (size != 0) {
-			xlsSheet.getPrintSetup().setPaperSize(size);
-		}
-	}
-    
-    private void buildHeader() {    	
-    	if (bean.getReportLayout().getPageHeaderBand().getColumnCount() == 0) {
-    		return;
-    	}
-    	try {    		
-    		printPageHeaderBand();        
-    		Header header = xlsSheet.getHeader();    		
-    		header.setCenter(headerS.toString());
-    	} catch (QueryException ex) {
-    		ex.printStackTrace();
-    	} finally {
-    		headerS = new StringBuilder();
-    	}
+    protected void newPage() {
+        addRegions(xlsSheet, regions, wb);
+        if (hasTemplate()) {
+            xlsSheet = wb.getSheetAt(bean.getReportLayout().getTemplateSheet()-1);
+        } else {
+            // for a group name inside sheet name when we create a page we do not have the group name yet
+            // so we will have to set the name of the previous sheet (see also finishExport where we set the name of the last sheet(s)
+            String sheetName = replaceSheetNameParam(bean.getReportLayout().getSheetNames());
+            if ((sheetName == null) || sheetName.isEmpty()) {
+                sheetName = String.valueOf(page);
+            }
+            if (sheetNameContainsGroup(bean.getReportLayout().getSheetNames()) && (page>1)) {
+                // current group is for previous sheet page
+                xlsSheet = wb.createSheet(String.valueOf(page));
+                wb.setSheetName(page-2, sheetName);
+            } else {
+                xlsSheet = wb.createSheet(sheetName);
+            }
+        }
+        xlsSheet.setMargin(InternalSheet.LeftMargin, getInches(bean.getReportLayout().getPagePadding().getLeft()));
+        xlsSheet.setMargin(InternalSheet.RightMargin, getInches(bean.getReportLayout().getPagePadding().getRight()));
+        xlsSheet.setMargin(InternalSheet.TopMargin, getInches(bean.getReportLayout().getPagePadding().getTop()));
+        xlsSheet.setMargin(InternalSheet.BottomMargin, getInches(bean.getReportLayout().getPagePadding().getBottom()));
+
+        if (bean.getReportLayout().getOrientation() == LANDSCAPE) {
+            xlsSheet.getPrintSetup().setLandscape(true);
+        }
+
+        setPaperSize();
+
+        patriarch = xlsSheet.createDrawingPatriarch();
+        buildHeader();
+        buildFooter();
+        page++;
+        // first page header is written by ResultExporter
+        if (bean.getReportLayout().isHeaderOnEveryPage() && (page > 2)) {
+            try {
+                printHeaderBand();
+            } catch (QueryException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void setPaperSize() {
+        String pageFormat = bean.getReportLayout().getPageFormat();
+        short size = 0;
+        if (ReportLayout.LETTER.equals(pageFormat)) {
+            size = PrintSetup.LETTER_PAPERSIZE;
+        } else if (ReportLayout.A3.equals(pageFormat)) {
+            size = PrintSetup.A3_PAPERSIZE;
+        } else if (ReportLayout.A4.equals(pageFormat)) {
+            size = PrintSetup.A4_PAPERSIZE;
+        } else if (ReportLayout.LEGAL.equals(pageFormat)) {
+            size = PrintSetup.LEGAL_PAPERSIZE;
+        } else if (ReportLayout.LEDGER.equals(pageFormat)) {
+            size = PrintSetup.LEDGER_PAPERSIZE;
+        } else if (ReportLayout.TABLOID.equals(pageFormat)) {
+            size = PrintSetup.TABLOID_PAPERSIZE;
+        }
+        if (size != 0) {
+            xlsSheet.getPrintSetup().setPaperSize(size);
+        }
+    }
+
+    private void buildHeader() {
+        if (bean.getReportLayout().getPageHeaderBand().getColumnCount() == 0) {
+            return;
+        }
+        try {
+            printPageHeaderBand();
+            Header header = xlsSheet.getHeader();
+            header.setCenter(headerS.toString());
+        } catch (QueryException ex) {
+            ex.printStackTrace();
+        } finally {
+            headerS = new StringBuilder();
+        }
     }
 
     private void buildFooter() {
-    	if (bean.getReportLayout().getPageFooterBand().getColumnCount() == 0) {
-    		return;
-    	}
-    	try {
-    		printPageFooterBand();  
-    		Footer footer = xlsSheet.getFooter();
-    		footer.setCenter(footerS.toString());
-    	} catch (QueryException ex) {
-    		ex.printStackTrace();
-    	} finally {
-    		footerS = new StringBuilder();
-    	}
+        if (bean.getReportLayout().getPageFooterBand().getColumnCount() == 0) {
+            return;
+        }
+        try {
+            printPageFooterBand();
+            Footer footer = xlsSheet.getFooter();
+            footer.setCenter(footerS.toString());
+        } catch (QueryException ex) {
+            ex.printStackTrace();
+        } finally {
+            footerS = new StringBuilder();
+        }
     }
-    
-    public float getInches(int pixels) {    	
-    	return  (float)pixels  / getDPI() ;
+
+    public float getInches(int pixels) {
+        return  (float)pixels  / getDPI() ;
     }
-    
-    private int getFontKey(Map<String, Object> style) {  
-    	final int prime = 31;
-		int hashCode = 1;
-    	    	
-    	if (style.containsKey(StyleFormatConstants.FONT_FAMILY_KEY)) {
-    		
+
+    private int getFontKey(Map<String, Object> style) {
+        final int prime = 31;
+        int hashCode = 1;
+
+        if (style.containsKey(StyleFormatConstants.FONT_FAMILY_KEY)) {
+
             String val = (String) style.get(StyleFormatConstants.FONT_FAMILY_KEY);
             hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.FONT_SIZE)) {        	
+        if (style.containsKey(StyleFormatConstants.FONT_SIZE)) {
             Float val = (Float) style.get(StyleFormatConstants.FONT_SIZE);
             hashCode = prime*hashCode + val.hashCode();
         }
@@ -978,130 +977,130 @@ public class XlsExporter extends ResultExporter {
             Color val = (Color) style.get(StyleFormatConstants.FONT_COLOR);
             hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.FONT_STYLE_KEY)) {        
-        	String val = (String) style.get(StyleFormatConstants.FONT_STYLE_KEY);
-        	hashCode = prime*hashCode + val.hashCode();
+        if (style.containsKey(StyleFormatConstants.FONT_STYLE_KEY)) {
+            String val = (String) style.get(StyleFormatConstants.FONT_STYLE_KEY);
+            hashCode = prime*hashCode + val.hashCode();
         }
         return hashCode;
     }
-    
+
     // all properties of same type like Color or Font must have different hashCodes!
-    private int getStyleKey(Map<String, Object> style, BandElement bandElement) {  
-    	final int prime = 31;
-    	int hashCode = getFontKey(style);   	
-    	if (style.containsKey(StyleFormatConstants.BACKGROUND_COLOR)) {    		
+    private int getStyleKey(Map<String, Object> style, BandElement bandElement) {
+        final int prime = 31;
+        int hashCode = getFontKey(style);
+        if (style.containsKey(StyleFormatConstants.BACKGROUND_COLOR)) {
             Color val = (Color) style.get(StyleFormatConstants.BACKGROUND_COLOR);
             hashCode = prime*hashCode + val.hashCode() * 3;
         }
-        if (style.containsKey(StyleFormatConstants.HORIZONTAL_ALIGN_KEY)) {        	
+        if (style.containsKey(StyleFormatConstants.HORIZONTAL_ALIGN_KEY)) {
             String val = (String) style.get(StyleFormatConstants.HORIZONTAL_ALIGN_KEY);
             hashCode = prime*hashCode +  + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.VERTICAL_ALIGN_KEY)) {        
-        	String val = (String) style.get(StyleFormatConstants.VERTICAL_ALIGN_KEY);
+        if (style.containsKey(StyleFormatConstants.VERTICAL_ALIGN_KEY)) {
+            String val = (String) style.get(StyleFormatConstants.VERTICAL_ALIGN_KEY);
             hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_LEFT)) {        	
-        	Float val = (Float) style.get(StyleFormatConstants.BORDER_LEFT) * 23;
-        	hashCode = prime*hashCode + val.hashCode();
+        if (style.containsKey(StyleFormatConstants.BORDER_LEFT)) {
+            Float val = (Float) style.get(StyleFormatConstants.BORDER_LEFT) * 23;
+            hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_RIGHT)) {        
-        	Float val = (Float) style.get(StyleFormatConstants.BORDER_RIGHT) * 29;
-        	hashCode = prime*hashCode + val.hashCode();
+        if (style.containsKey(StyleFormatConstants.BORDER_RIGHT)) {
+            Float val = (Float) style.get(StyleFormatConstants.BORDER_RIGHT) * 29;
+            hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_TOP)) {        	
-        	Float val = (Float) style.get(StyleFormatConstants.BORDER_TOP) * 31;
-        	hashCode = prime*hashCode + val.hashCode();
+        if (style.containsKey(StyleFormatConstants.BORDER_TOP)) {
+            Float val = (Float) style.get(StyleFormatConstants.BORDER_TOP) * 31;
+            hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_BOTTOM)) {        	
-        	Float val = (Float) style.get(StyleFormatConstants.BORDER_BOTTOM) * 37;
-        	hashCode = prime*hashCode + val.hashCode();
-        }        
-        if (style.containsKey(StyleFormatConstants.BORDER_LEFT_COLOR)) {        	
-        	Color val = (Color) style.get(StyleFormatConstants.BORDER_LEFT_COLOR);
-        	hashCode = prime*hashCode + val.hashCode() * 5;
+        if (style.containsKey(StyleFormatConstants.BORDER_BOTTOM)) {
+            Float val = (Float) style.get(StyleFormatConstants.BORDER_BOTTOM) * 37;
+            hashCode = prime*hashCode + val.hashCode();
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_RIGHT_COLOR)) {        	
-        	Color val = (Color) style.get(StyleFormatConstants.BORDER_RIGHT_COLOR);
-        	hashCode = prime*hashCode + val.hashCode() * 7;
+        if (style.containsKey(StyleFormatConstants.BORDER_LEFT_COLOR)) {
+            Color val = (Color) style.get(StyleFormatConstants.BORDER_LEFT_COLOR);
+            hashCode = prime*hashCode + val.hashCode() * 5;
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_TOP_COLOR)) {        
-        	Color val = (Color) style.get(StyleFormatConstants.BORDER_TOP_COLOR);
-        	hashCode = prime*hashCode +  val.hashCode() * 11;
+        if (style.containsKey(StyleFormatConstants.BORDER_RIGHT_COLOR)) {
+            Color val = (Color) style.get(StyleFormatConstants.BORDER_RIGHT_COLOR);
+            hashCode = prime*hashCode + val.hashCode() * 7;
         }
-        if (style.containsKey(StyleFormatConstants.BORDER_BOTTOM_COLOR)) {        	
-        	Color val = (Color) style.get(StyleFormatConstants.BORDER_BOTTOM_COLOR);
-        	hashCode = prime*hashCode + val.hashCode() * 13;
+        if (style.containsKey(StyleFormatConstants.BORDER_TOP_COLOR)) {
+            Color val = (Color) style.get(StyleFormatConstants.BORDER_TOP_COLOR);
+            hashCode = prime*hashCode +  val.hashCode() * 11;
         }
-        if (style.containsKey(StyleFormatConstants.PATTERN)) {        	
-        	String val = (String) style.get(StyleFormatConstants.PATTERN);        	
-        	hashCode = prime*hashCode + val.hashCode() * 17;
+        if (style.containsKey(StyleFormatConstants.BORDER_BOTTOM_COLOR)) {
+            Color val = (Color) style.get(StyleFormatConstants.BORDER_BOTTOM_COLOR);
+            hashCode = prime*hashCode + val.hashCode() * 13;
         }
-        
+        if (style.containsKey(StyleFormatConstants.PATTERN)) {
+            String val = (String) style.get(StyleFormatConstants.PATTERN);
+            hashCode = prime*hashCode + val.hashCode() * 17;
+        }
+
         if (bandElement != null) {
-        	hashCode = prime*hashCode + (bandElement.isWrapText() ? 19 : 41);
-        }	
+            hashCode = prime*hashCode + bandElement.hashCode();
+        }
         return hashCode;
     }
-    
+
     public HSSFSheet getSubreportSheet() {
-    	return xlsSheet;
+        return xlsSheet;
     }
-    
+
     public List<XlsRegion> getSubreportRegions() {
-    	return regions;
+        return regions;
     }
-    
-	private InputStream getTemplateInputStream() throws IOException {
-		LOG.info(">>>>>>>>> Look for : " + bean.getReportLayout().getTemplateName());
-		InputStream is = getClass().getResourceAsStream("/" + bean.getReportLayout().getTemplateName());
-		if (is == null) {
-			LOG.error("Template '" + bean.getReportLayout().getTemplateName() + "' not found in classpath.");
-			throw new IOException("Template '" + bean.getReportLayout().getTemplateName() + "' not found.");
-		}
-		LOG.info(">>>>>>>>> Found template: " + bean.getReportLayout().getTemplateName());
-		
-		return is;
-	}
-	
-	private boolean hasTemplate() {
-		return (bean.getReportLayout().getTemplateName() != null) && !"".equals(bean.getReportLayout().getTemplateName().trim());
-	}
-	
-	private String replaceSheetNameParam(String sheetName) {	
-		String actualName = sheetName;
-		if (actualName == null) {
-			actualName = String.valueOf(page);
-		} else if (sheetName.contains("${NO}")) {			
-			actualName = StringUtil.replace(sheetName, "\\$\\{NO\\}", String.valueOf(page));	     
-		} else if (sheetName.contains("${G")) {
-		    int startIndex = sheetName.indexOf("${");
-		    int endIndex = sheetName.indexOf("}");
-		    String group = sheetName.substring(startIndex+2, endIndex);		    
-		    actualName = StringUtil.replace(sheetName, "\\$\\{" + group + "\\}", getCurrentValueForGroup(group));
-		    if (actualName.isEmpty()) {
-		    	actualName = String.valueOf(page);
-		    }		    
-		} else if (sheetName.contains(";")) {
-			// static list of names
-			String[] names = sheetName.split(";");
-			if (names.length < page) {
-				// too few sheet names
-				actualName = String.valueOf(page);
-			} else {
-				actualName = names[page-1];
-			}			
-		} else {
-			actualName = String.valueOf(page);
-		}
-		return actualName;				 	         
-	}     
-	
-	private boolean sheetNameContainsGroup(String sheetName) {
-		if (sheetName == null) {
-			return false;
-		}
-		return sheetName.contains("${G");
-	}
+
+    private InputStream getTemplateInputStream() throws IOException {
+        LOG.info(">>>>>>>>> Look for : " + bean.getReportLayout().getTemplateName());
+        InputStream is = getClass().getResourceAsStream("/" + bean.getReportLayout().getTemplateName());
+        if (is == null) {
+            LOG.error("Template '" + bean.getReportLayout().getTemplateName() + "' not found in classpath.");
+            throw new IOException("Template '" + bean.getReportLayout().getTemplateName() + "' not found.");
+        }
+        LOG.info(">>>>>>>>> Found template: " + bean.getReportLayout().getTemplateName());
+
+        return is;
+    }
+
+    private boolean hasTemplate() {
+        return (bean.getReportLayout().getTemplateName() != null) && !"".equals(bean.getReportLayout().getTemplateName().trim());
+    }
+
+    private String replaceSheetNameParam(String sheetName) {
+        String actualName = sheetName;
+        if (actualName == null) {
+            actualName = String.valueOf(page);
+        } else if (sheetName.contains("${NO}")) {
+            actualName = StringUtil.replace(sheetName, "\\$\\{NO\\}", String.valueOf(page));
+        } else if (sheetName.contains("${G")) {
+            int startIndex = sheetName.indexOf("${");
+            int endIndex = sheetName.indexOf("}");
+            String group = sheetName.substring(startIndex+2, endIndex);
+            actualName = StringUtil.replace(sheetName, "\\$\\{" + group + "\\}", getCurrentValueForGroup(group));
+            if (actualName.isEmpty()) {
+                actualName = String.valueOf(page);
+            }
+        } else if (sheetName.contains(";")) {
+            // static list of names
+            String[] names = sheetName.split(";");
+            if (names.length < page) {
+                // too few sheet names
+                actualName = String.valueOf(page);
+            } else {
+                actualName = names[page-1];
+            }
+        } else {
+            actualName = String.valueOf(page);
+        }
+        return actualName;
+    }
+
+    private boolean sheetNameContainsGroup(String sheetName) {
+        if (sheetName == null) {
+            return false;
+        }
+        return sheetName.contains("${G");
+    }
 
 }

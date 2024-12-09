@@ -12,7 +12,7 @@
                 <ivy pattern="${repo.dir}/[organisation]/[module]-[revision].xml"/>
             </filesystem>
             
-            <ibiblio name="public" root="http://repo1.maven.org/maven2" m2compatible="true"/>
+            <ibiblio name="public" root="https://repo1.maven.org/maven2" m2compatible="true"/>
         </chain>
     </resolvers>
     

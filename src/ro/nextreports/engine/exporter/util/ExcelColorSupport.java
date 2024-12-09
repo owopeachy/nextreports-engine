@@ -19,6 +19,7 @@ package ro.nextreports.engine.exporter.util;
 import java.awt.Color;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.poi.hssf.util.HSSFColor;
 
@@ -37,8 +38,8 @@ public final class ExcelColorSupport {
     /**
      * the pre-defined excel color triplets.
      */
-    private static Hashtable triplets;
-
+    //private static Hashtable triplets;
+    private static Map<String, HSSFColor> triplets;
 
     /**
      * Find a suitable color for the cell.
@@ -59,10 +60,10 @@ public final class ExcelColorSupport {
 
         if (triplets == null || triplets.isEmpty()) {
             System.out.println("Unable to get triplet hashtable");
-            return HSSFColor.BLACK.index;
+            return HSSFColor.HSSFColorPredefined.BLACK.getIndex();
         }
 
-        short color = HSSFColor.BLACK.index;
+        short color = HSSFColor.HSSFColorPredefined.BLACK.getIndex();
         double minDiff = Double.MAX_VALUE;
 
         // get the color without the alpha chanel

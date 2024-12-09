@@ -43,7 +43,7 @@ Copyright:
     <target name="ivy.init" depends="ivy.download">
         <!-- Download the ivy jar and defines ivy tasks -->
         <path id="ivy.lib.path">
-              <pathelement location="${ivy.jar.file}"/>
+            <pathelement location="${ivy.jar.file}"/>
         </path>
         <!-- The ivy tasks are dependent by ivy.lib.path declared above -->
         <taskdef resource="org/apache/ivy/ant/antlib.xml" uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
@@ -76,14 +76,14 @@ Copyright:
 
         <!-- Compile the java code from ${app.src} into ${app.classes} -->
         <javac
-            source="${javac.version}"
-            target="${javac.version}"
-            srcdir="${app.src}"
-            destdir="${app.classes}"
-            debug="${javac.debug}"
-            verbose="${javac.verbose}"
-            deprecation="${javac.deprecation}"
-            classpathref="classpath"
+                source="${javac.version}"
+                target="${javac.version}"
+                srcdir="${app.src}"
+                destdir="${app.classes}"
+                debug="${javac.debug}"
+                verbose="${javac.verbose}"
+                deprecation="${javac.deprecation}"
+                classpathref="classpath"
         />
     </target>
 
@@ -95,7 +95,7 @@ Copyright:
         <delete file="${app.target}/${app.jar}"/>
 
         <!-- Create jar file  -->
-        <jar jarfile="${app.target}/${app.jar}" compress="true" >
+        <jar jarfile="${app.target}/${app.jar}" compress="true">
             <fileset dir="${app.classes}" includes="ro/nextreports/engine/**/*.class"/>
             <manifest>
                 <attribute name="Built-By" value="${user.name}"/>
@@ -168,9 +168,9 @@ Copyright:
     <target name="version">
         <!-- Add ant task -->
         <taskdef
-            name="jreleaseinfo"
-            classname="ch.oscg.jreleaseinfo.anttask.JReleaseInfoAntTask"
-            classpath="${ant.tasks.dir}/jreleaseinfo-1.3.0.jar"
+                name="jreleaseinfo"
+                classname="ch.oscg.jreleaseinfo.anttask.JReleaseInfoAntTask"
+                classpath="${ant.tasks.dir}/jreleaseinfo-1.3.0.jar"
         />
 
         <property name="app.src.dir" location="${app.src}"/>
@@ -182,15 +182,15 @@ Copyright:
 
         <!-- Create release info -->
         <jreleaseinfo
-            classname="ReleaseInfo"
-            packagename="ro.nextreports.engine"
-            targetdir="${app.src.dir}"
-            project="NextReports"
-            version="${app.version}">
-                <parameter name="company" value="NextReports"/>
-                <parameter name="home" value="www.next-reports.com"/>
-                <parameter name="buildNumber" value="${build.number}" type="int"/>
-                <parameter name="copyright" value="${app.copyright}"/>
+                classname="ReleaseInfo"
+                packagename="ro.nextreports.engine"
+                targetdir="${app.src.dir}"
+                project="NextReports"
+                version="${app.version}">
+            <parameter name="company" value="NextReports"/>
+            <parameter name="home" value="www.next-reports.com"/>
+            <parameter name="buildNumber" value="${build.number}" type="int"/>
+            <parameter name="copyright" value="${app.copyright}"/>
         </jreleaseinfo>
     </target>
 
@@ -202,10 +202,10 @@ Copyright:
         <mkdir dir="${app.target}/javadoc"/>
 
         <javadoc packagenames="ro.nextreports.engine"
-               sourcepath="src"
-               destdir="${app.target}/javadoc"
-               classpathref="classpath"
-               author="false">
+                 sourcepath="src"
+                 destdir="${app.target}/javadoc"
+                 classpathref="classpath"
+                 author="false">
             <doctitle><![CDATA[<h1>NextReports Integration ${app.version}</h1>]]></doctitle>
             <fileset dir="${app.src}">
                 <includesfile name="integration-javadoc.txt"/>

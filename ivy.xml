@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ivy-module version="2.0" xmlns:m="http://ant.apache.org/ivy/maven">
+<ivy-module version="2.0"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
     <info organisation="ro.nextreports" module="nextreports-engine" revision="${app.version}"/>    
     
     <!-- 
@@ -22,8 +24,8 @@
     
     <publications>
         <artifact type="jar" ext="jar"/>
-        <artifact type="source" ext="jar" m:classifier="sources"/>
-        <artifact type="javadoc" ext="jar" m:classifier="javadoc"/>
+        <artifact type="source" ext="jar" xsi:classifier="sources"/>
+        <artifact type="javadoc" ext="jar" xsi:classifier="javadoc"/>
         <artifact type="descriptor" ext="pom"/>
     </publications>
         
@@ -47,8 +49,8 @@
         <dependency org="com.fasterxml.jackson.core" name="jackson-databind" rev="2.3.0" conf="chart, allruntime"/>        
         
         <!-- POI -->
-        <dependency org="org.apache.poi" name="poi" rev="3.7" conf="excel, docx, allruntime"/>        
-        <dependency org="org.apache.poi" name="poi-ooxml" rev="3.7" conf="excel, docx, allruntime">
+        <dependency org="org.apache.poi" name="poi" rev="5.1.0" conf="excel, docx, allruntime"/>
+        <dependency org="org.apache.poi" name="poi-ooxml" rev="5.1.0" conf="excel, docx, allruntime">
             <exclude org="xml-apis"/>
         </dependency>
         
@@ -81,7 +83,7 @@
         <dependency org="net.sourceforge.winstone" name="winstone-lite" rev="0.9.10" conf="demo"/>
         
         <!-- Jdbc drivers -->   
-        <dependency org="org.apache.derby" name="derby" rev="10.10.1.1" conf="demo"/>
+        <dependency org="org.apache.derby" name="derby" rev="10.14.1.0" conf="demo"/>
     </dependencies>           
             
 </ivy-module>

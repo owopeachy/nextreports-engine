@@ -136,22 +136,22 @@ public class XlsxUtil {
 			}			
 		}
 		switch (oldCell.getCellType()) {
-		case XSSFCell.CELL_TYPE_STRING:
+		case STRING:
 			newCell.setCellValue(oldCell.getStringCellValue());
 			break;
-		case XSSFCell.CELL_TYPE_NUMERIC:
+		case NUMERIC:
 			newCell.setCellValue(oldCell.getNumericCellValue());
 			break;
-		case XSSFCell.CELL_TYPE_BLANK:
-			newCell.setCellType(XSSFCell.CELL_TYPE_BLANK);
+		case BLANK:
+			newCell.setCellValue("");
 			break;
-		case XSSFCell.CELL_TYPE_BOOLEAN:
+		case BOOLEAN:
 			newCell.setCellValue(oldCell.getBooleanCellValue());
 			break;
-		case XSSFCell.CELL_TYPE_ERROR:
+		case ERROR:
 			newCell.setCellErrorValue(oldCell.getErrorCellValue());
 			break;
-		case XSSFCell.CELL_TYPE_FORMULA:
+		case FORMULA:
 			newCell.setCellFormula(oldCell.getCellFormula());
 			break;
 		default:
